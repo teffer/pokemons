@@ -1,0 +1,31 @@
+<html>
+    <head>
+    </head>
+    <body>
+        <p id = 'identifier'>Hомер {{i}}</p>
+        <p>Имя {{name}}</p>
+        <p>Здоровье {{health}}</p>
+        <p>Атака {{attack}}</p>
+        <p>Защита {{defence}}</p>
+        <p>Скорость {{speed}}</p>
+        <p>Урон супер атаки {{special_attack}}</p>
+        <p>сколько очков действий надо потрятить {{special_attack_points}}</p>
+        <button id ='battleButton'>В бой!</button>
+        <p id = 'result'></p>
+        <script>
+            document.getElementById("battleButton").addEventListener("click",function(){
+                var chosenPId = document.getElementById('identifier');
+                var i = chosenPId.textContent.match(/\d+/);
+                fetch("/battle/"+i)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.result === true){
+                            document.getElementById("result").textContent = 'Победа!'
+                        } else{
+                            document.getElementById("result").textContent = 'Поражение!'
+                        }
+                    })
+            });
+        </script>
+    </body>
+</html>
