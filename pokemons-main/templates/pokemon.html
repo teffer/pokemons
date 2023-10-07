@@ -1,0 +1,37 @@
+<html>
+    <head>
+    </head>
+    <body>
+        <p id = 'identifier'>Hомер {{i}}</p>
+        <p>Имя {{name}}</p>
+        <p>Здоровье {{health}}</p>
+        <p>Атака {{attack}}</p>
+        <p>Защита {{defence}}</p>
+        <p>Скорость {{speed}}</p>
+        <p>Урон супер атаки {{special_attack}}</p>
+        <p>сколько очков действий надо потрятить {{special_attack_points}}</p>
+        <p>введите число для начала боя</p>
+        <form action="handler.php">
+            <p>Введите число от 1 до 10:</p>
+            <p><input id="number" size="3" name="num" min="1" max="10" value="1"></p>
+           </form>
+        <button id ='battleButton'>В бой!</button>
+        <p id = 'result'></p>
+        <p id = 'result1'></p>
+        <p id = 'test'></p>
+        <script>
+            document.getElementById("battleButton").addEventListener("click",function(){
+                var chosenPId = document.getElementById('identifier');
+                var i = chosenPId.textContent.match(/\d+/);
+                var number = document.getElementById('number').value;
+                document.getElementById("result1").textContent = number;
+                document.getElementById('test').textContent = "/battle/"+i+"/"+number+"/"+getrandomint(20);
+                fetch("/battle/"+i+"/"+number)
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById("result").textContent = data.result
+                    })
+            });
+        </script>
+    </body>
+</html>
