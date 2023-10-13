@@ -1,31 +1,57 @@
+<!DOCTYPE html>
 <html>
-    <head>
-    </head>
-    <body>
-        <p id = 'identifier'>Hомер {{i}}</p>
-        <p>Имя {{name}}</p>
-        <p>Здоровье {{health}}</p>
-        <p>Атака {{attack}}</p>
-        <p>Защита {{defence}}</p>
-        <p>Скорость {{speed}}</p>
-        <p>Урон супер атаки {{special_attack}}</p>
-        <p>сколько очков действий надо потрятить {{special_attack_points}}</p>
-        <button id ='battleButton'>В бой!</button>
-        <p id = 'result'></p>
-        <script>
-            document.getElementById("battleButton").addEventListener("click",function(){
-                var chosenPId = document.getElementById('identifier');
-                var i = chosenPId.textContent.match(/\d+/);
-                fetch("/battle/"+i)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.result === true){
-                            document.getElementById("result").textContent = 'Победа!'
-                        } else{
-                            document.getElementById("result").textContent = 'Поражение!'
-                        }
-                    })
-            });
-        </script>
-    </body>
+<head>
+    <title>{{ name }} - Pokemon Battle</title>
+</head>
+<body>
+    <h1>Pokemon Battle</h1>
+    {% if outcome_message %}
+    <p>Результат:{{outcome_message}} </p>
+    <a href="/">Выбрать другого покемона</a>
+    {% endif %}
+    <h2>Информация о вашем покемоне:</h2>
+    <p>Имя: {{ name }}</p>
+    <p>Здоровье: {{ health }}</p>
+    <p>Атака: {{ attack }}</p>
+    <p>Защита: {{ defence }}</p>
+    <p>Скорость: {{ speed }}</p>
+    <p>Урон супер атаки: {{ special_attack }}</p>
+    <p>Сколько очков действий надо потратить: {{ special_attack_points }}</p>
+    <h2>Битва:</h2>
+    <form method="POST" action="/battle">
+        <label for="player_choice">Выберите число от 1 до 10: </label>
+        <input type="number" id="player_choice" name="player_choice" min="1" max="10" required>
+        <button type="submit">Сразиться</button>
+    </form>
+    <h2>Быстрая битва:</h2>
+    <form method="POST" action="/qbattle">
+        <button type="submit">Сразиться</button>
+    </form>
+    {% if player_choice is defined and computer_choice is defined %}
+    <h3>Раунд {{ round_number }} результаты:</h3>
+    <p>Вы выбрали: {{ player_choice }}</p>
+    <p>Компьютер выбрал: {{ computer_choice }}</p>
+    <p>Здоровье вашего покемона: {{ player_health }}</p>
+    <p>Здоровье компьютера: {{ computer_health }}</p>
+    <p>Результат раунда: 
+        {% if player_attack > 0 %}
+            Вы нанесли {{player_attack - 0.5*computer_def }} урона!
+        {% elif computer_attack > 0 %}
+            Компьютер нанес {{computer_attack-0.5*defence }} урона!
+        {% else %}
+            Ничья - никто не нанес урон.
+        {% endif %}
+    </p>
+    <p>
+        {% if player_health <= 0 %}
+            Поражение! 
+        {% elif computer_health <= 0 %}
+            Победа! 
+        {% else %}
+            Новый раунд начнется после вашего выбора.
+        {% endif %}
+    </p>
+    {% endif %}
+
+</body>
 </html>

@@ -37,6 +37,11 @@
             Выбрать
         </button>
    </form>
+   {% if outcome_message %}
+   <div>
+       <p>{{ outcome_message }}</p>
+   </div>
+   {% endif %}
 </body>
 
 </html>
