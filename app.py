@@ -233,7 +233,7 @@ def battle():
             outcome_message = 'Defeat'
             rec_mail = 'tefferino@gmail.com'
             mail_message = current_pokemon_data['name'] +'\n'+ computer_data['name'] + '\n'+outcome_message
-            #send_email(mail_message,rec_mail)
+            send_email(mail_message,rec_mail)
             return render_template('pokemon.html', i=player_pokemon, name=name, health=health, attack=attack, defence=defence, speed=speed, special_attack=special_attack, special_attack_points=special_attack_points, player_choice=player_choice, computer_choice=computer_choice, player_attack=player_attack, computer_attack=computer_attack, player_health=new_player_health, computer_health=new_computer_health,computer_def = computer_def,outcome_message = outcome_message)
         elif new_computer_health <= 0:
             session.clear()
@@ -241,7 +241,7 @@ def battle():
             outcome_message = 'Win'
             rec_mail = 'tefferino@gmail.com'
             mail_message = current_pokemon_data['name'] +'\n'+ computer_data['name'] + '\n'+outcome_message
-            #send_email(mail_message,rec_mail)            
+            send_email(mail_message,rec_mail)            
             return render_template('pokemon.html', i=player_pokemon, name=name, health=health, attack=attack, defence=defence, speed=speed, special_attack=special_attack, special_attack_points=special_attack_points, player_choice=player_choice, computer_choice=computer_choice, player_attack=player_attack, computer_attack=computer_attack, player_health=new_player_health, computer_health=new_computer_health,computer_def = computer_def,outcome_message = outcome_message)
         else:
             round_number = session.get('round_number', 1)
