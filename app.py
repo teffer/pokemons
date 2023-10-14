@@ -12,7 +12,7 @@ app = Flask(__name__)
 app.secret_key = 'tef'
 app.config['DATABASE'] = 'pokemon.db'
 EMAIL_HOST = 'smtp.mail.ru'
-EMAIL_PORT = '465'
+EMAIL_PORT = 465
 EMAIL_ADDRESS = 'zhenya.lember@mail.ru'
 EMAIL_PASSWORD = 'STFdVAVjVKmjexRN4gsA'
 def send_email(message, to_email):
@@ -20,11 +20,10 @@ def send_email(message, to_email):
         msg = MIMEMultipart()
         msg['From'] = EMAIL_ADDRESS
         msg['To'] = to_email
-        msg['Subject'] = 'реузльтат битвы покемонов'
+        msg['Subject'] = 'результат битвы покемонов'
         msg.attach(MIMEText(message, 'plain'))
         print(msg.as_string())
-        server = smtplib.SMTP(EMAIL_HOST, EMAIL_PORT)
-        server.starttls()
+        server = smtplib.SMTP_SSL(EMAIL_HOST, EMAIL_PORT)
         print('starttls')
         time.sleep(5)
         server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
@@ -61,11 +60,14 @@ def main():
                 f'https://pokeapi.co/api/v2/pokemon/{i}/').json()
             health = current_pokemon_data.get('stats', [])[0]['base_stat']
             attack = current_pokemon_data.get('stats', [])[1]['base_stat']
+            image = current_pokemon_data.get('sprites', {}).get('front_default', '')
+            print(image)
             pokemon_info = {
                 "id": i,
                 "name": pokemon['name'],
                 "health": health,
-                "attack": attack
+                "attack": attack,
+                "pokemon_image": image
             }
             pokemon_list.append(pokemon_info)
         return pokemon_list
@@ -91,6 +93,7 @@ def choosing():
                 speed = current_pokemon_data.get('stats', [])[4]['base_stat']
                 special_attack = current_pokemon_data.get('stats', [])[3]['base_stat']
                 special_attack_points = current_pokemon_data.get('stats', [])[3]['effort']
+                image = current_pokemon_data.get('sprites', {}).get('front_default', '')
                 computer_pokemon = random.randint(1, 20)
                 while player_pokemon == computer_pokemon:
                     computer_pokemon = random.randint(1, 20)
@@ -117,7 +120,7 @@ def choosing():
                                        defence=defence, speed=speed, special_attack=special_attack,
                                        special_attack_points=special_attack_points, 
                                        player_health=p_hp_left, computer_health=c_hp_left, computer_def=c_def,
-                                       outcome_message=outcome_message)
+                                       outcome_message=outcome_message,image = image)
             else:
                 return "Invalid choice"
         except ValueError:
@@ -149,6 +152,8 @@ def qbattle():
                     3]['effort']
         new_computer_health = session.get('computer_health')
         new_player_health = session.get('player_health')
+        computer_attack = session.get('computer_damage')
+        player_attack = session.get('player_damage')
         computer_attack = session.get('computer_damage')
         while(True):
             new_computer_health = session.get('computer_health')

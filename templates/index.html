@@ -24,6 +24,9 @@
                 <td>
                     {{pokemon['health']}}
                 </td>
+                <td>
+                    <img src="{{ pokemon['pokemon_image'] }}" alt="{{ pokemon['name'] }} Image">
+                </td>
         {% endfor %}
     </table>
    <form method = "POST">
