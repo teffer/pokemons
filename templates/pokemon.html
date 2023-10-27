@@ -53,6 +53,44 @@
         {% endif %}
     </p>
     {% endif %}
-
+    <form id="ftp-form" action="/save_to_ftp" method="POST">
+        <label for="ftp_username">FTP Логин:</label>
+        <input type="text" id="ftp_username" name="ftp_username" required>
+        <br>
+        <label for="ftp_password">FTP Пароль:</label>
+        <input type="password" id="ftp_password" name="ftp_password" required>
+        <br>
+        <input type="button" id="save-to-ftp-button" value="Сохранить покемона на FTP">
+    </form>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $("#save-to-ftp-button").click(function () {
+                var ftpUsername = $("#ftp_username").val();
+                var ftpPassword = $("#ftp_password").val();
+        
+                $.ajax({
+                    type: "POST",
+                    url: "/save_to_ftp",
+                    data: {
+                        ftp_username: ftpUsername,
+                        ftp_password: ftpPassword
+                    },
+                    success: function (response) {
+                        if (response === "True") {
+                            alert("Данные успешно сохранены на FTP!");
+                            location.reload();
+                        } else {
+                            alert("Данные успешно сохранены на FTP!");
+                        }
+                    },
+                    error: function (error) {
+                        console.log(error);
+                        alert("Произошла ошибка при выполнении AJAX-запроса.");
+                    }
+                });
+            });
+        });
+        </script>
 </body>
 </html>

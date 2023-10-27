@@ -3,9 +3,13 @@ import ssl
 import smtplib
 import random
 import time
+import ftplib
+import json
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import sqlite3
+from datetime import datetime
+from ftplib import FTP
 from flask import Flask, render_template, request,jsonify,session,g,redirect,url_for
 
 app = Flask(__name__)
@@ -73,10 +77,37 @@ def main():
         return pokemon_list
     else:
         print(f"{response.status_code}")
+@app.route('/save_to_ftp', methods=['POST'])
+def save_to_ftp():
+    if 'ftp_username' not in request.form or 'ftp_password' not in request.form:
+        return json.dumps({"success": False, "error": "Missing FTP credentials"})
 
+    ftp_username = request.form['ftp_username']
+    ftp_password = request.form['ftp_password']
+    
+    current_date = datetime.now().strftime("%Y%m%d")
+    filename = f"{current_date}.md"
+    
+    pokemon_info = f"# {session.get('player_pokemon')}\n\n"\
+                  f"Здоровье: {session.get('player_health')}\n"\
+                  f"Атака: {session.get('player_damage')}\n"\
+                  f"Защита: {session.get('player_def')}\n"
 
+    ftp = ftplib.FTP('localhost')
+    try:
+        ftp.login(user=ftp_username, passwd=ftp_password)
+        ftp.mkd(current_date)
+        ftp.cwd(current_date)
+        file_path = f"C:/ftp folder/{current_date}/{filename}"
+        print(file_path)
+        with open(file_path, "w") as file:
+            file.write(pokemon_info)
+        ftp.quit()
+        return json.dumps({"success": True})
+    except ftplib.error_perm as e:
+        print(f"FTP Error: {e}")
+        return json.dumps({"success": False, "error": str(e)})
 @app.route("/", methods=["GET", "POST"])
-
 def choosing():
     outcome_message = "" 
 
@@ -115,7 +146,6 @@ def choosing():
                 session['computer_damage'] = c_att
                 session['player_def'] = p_def
                 session['computer_def'] = c_def
-
                 return render_template('pokemon.html', i=player_pokemon, name=name, health=health, attack=attack, 
                                        defence=defence, speed=speed, special_attack=special_attack,
                                        special_attack_points=special_attack_points, 
