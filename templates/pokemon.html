@@ -4,6 +4,8 @@
     <title>{{ name }} - Pokemon Battle</title>
 </head>
 <body>
+    <p>Logout:</p>
+    <a href="{{ url_for('logout') }}">Login with VK</a>
     <h1>Pokemon Battle</h1>
     {% if outcome_message %}
     <p>Результат:{{outcome_message}} </p>

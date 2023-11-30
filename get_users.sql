@@ -1,0 +1,1 @@
+ALTER TABLE battle_results ADD COLUMN rounds TEXT;

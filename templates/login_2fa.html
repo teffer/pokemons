@@ -1,0 +1,9 @@
+<form method="POST" action="/login">
+    <label for="email">Email:</label>
+    <input type="email" id="email" name="email" required>
+    <label for="otp">One-Time Password:</label>
+    <input type="text" id="otp" name="otp" required>
+    <button type="submit">Login</button>
+    <p>Don't have an account? <a href="{{ url_for('register') }}">Register here</a></p>
+    <p>Forgot your password? <a href="{{ url_for('password_recovery') }}">Reset it here</a></p>
+</form>

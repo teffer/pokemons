@@ -6,7 +6,16 @@ import time
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import sqlite3
-from flask import Flask, render_template, request,jsonify,session,g,redirect,url_for
+from flask import Flask, render_template, request,jsonify,session,g,redirect,url_for,flash
+from flask_caching import Cache
+import redis
+from werkzeug.security import generate_password_hash, check_password_hash
+import pyotp
+from flask_bcrypt import Bcrypt 
+from functools import wraps
+from flask_oauthlib.client import OAuth
+import secrets
+from prometheus_flask_exporter import PrometheusMetrics
 
 app = Flask(__name__)
 app.secret_key = 'tef'
@@ -15,6 +24,33 @@ EMAIL_HOST = 'smtp.mail.ru'
 EMAIL_PORT = 465
 EMAIL_ADDRESS = 'zhenya.lember@mail.ru'
 EMAIL_PASSWORD = 'STFdVAVjVKmjexRN4gsA'
+app.config['CACHE_TYPE'] = 'redis'
+app.config['CACHE_KEY_PREFIX'] = 'pokemon_cache'
+app.config['CACHE_REDIS_HOST'] = 'localhost'
+app.config['CACHE_REDIS_PORT'] = 6379
+app.config['CACHE_REDIS_DB'] = 0
+metrics = PrometheusMetrics(app)
+cache = Cache(app)
+oauth = OAuth(app)
+vk = oauth.remote_app(
+    'vk',
+    consumer_key='51805289',
+    consumer_secret='ym2I5aN7qLmJsApFScl3',
+    request_token_params={'scope': 'email'},
+    base_url='https://api.vk.com/method/',
+    request_token_url=None,
+    access_token_method='POST',
+    access_token_url='https://oauth.vk.com/access_token',
+    authorize_url='https://oauth.vk.com/authorize',
+)
+def login_required(view):
+    @wraps(view)
+    def wrapped_view(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+        return view(*args, **kwargs)
+    return wrapped_view
+
 def send_email(message, to_email):
     try:
         msg = MIMEMultipart()
@@ -41,15 +77,43 @@ def get_db():
 def close_db(error):
     if hasattr(g, 'db'):
         g.db.close()
-def insert_battle_result(player_name,computer_name,outcome):
+def insert_battle_result(player_name,computer_name,outcome,user_id,rounds):
     db = get_db()
-    db.execute('INSERT INTO battle_results (player_name,computer_name, outcome, battle_date) VALUES (?, ?, ?,CURRENT_TIMESTAMP)',
-               [player_name,computer_name,outcome])
+    db.execute('INSERT INTO battle_results (player_name,computer_name, outcome,user_id,rounds,battle_date) VALUES (?, ?, ?,?,?,CURRENT_TIMESTAMP)',
+               [player_name,computer_name,outcome,user_id,rounds])
     db.commit()
+
+@app.route('/cache-info', methods=['GET'])
+@login_required
+def cache_info():
+    cache_data = {}
+
+    # Connect to the Redis server
+    redis_conn = redis.StrictRedis(host='localhost', port=6379, db=0)
+
+    # Fetch all keys using the KEYS command (Note: KEYS can be resource-intensive)
+    all_keys = redis_conn.keys('*')
+
+    # Fetch values for each key
+    for key in all_keys:
+        value = redis_conn.get(key)
+        cache_data[key.decode('utf-8', errors='replace')] = value.decode('utf-8', errors='replace') if value else None
+
+    return jsonify(cache_data)
+
 def main():
+    @cache.memoize(timeout=300)  # Cache for 5 minutes
+    def fetch_pokemon_data(url,**params):
+        response = requests.get(url)
+        if response.status_code == 200:
+            return response.json().get('results', [])
+        else:
+            print(f"{response.status_code}")
+
     # print('program going forward2')
     url = 'https://pokeapi.co/api/v2/pokemon/'
     param = {"limit": 20}
+    pokemons_list = fetch_pokemon_data(url, params=param)
     response = requests.get(url, params=param)
     if response.status_code == 200:
         pokemon_list = []
@@ -74,14 +138,13 @@ def main():
     else:
         print(f"{response.status_code}")
 
-
 @app.route("/", methods=["GET", "POST"])
-
+@login_required
 def choosing():
     outcome_message = "" 
-
     if request.method == "POST":
         choice = request.form["choice"]
+        print(choice)
         try:
             player_pokemon = int(choice)
             if 0 < player_pokemon < 20:
@@ -115,7 +178,7 @@ def choosing():
                 session['computer_damage'] = c_att
                 session['player_def'] = p_def
                 session['computer_def'] = c_def
-
+                print(choice)
                 return render_template('pokemon.html', i=player_pokemon, name=name, health=health, attack=attack, 
                                        defence=defence, speed=speed, special_attack=special_attack,
                                        special_attack_points=special_attack_points, 
@@ -126,8 +189,14 @@ def choosing():
         except ValueError:
             pass
     else:
-        pokemon_list = main()
-        print(outcome_message)
+        print('something 1')
+        cached_pokemon_list = cache.get('pokemon_list')
+        if cached_pokemon_list:
+            pokemon_list = cached_pokemon_list
+        else:
+            pokemon_list = main()
+        cache.set('pokemon_list', pokemon_list)
+        print('something')
         return render_template('index.html', pokemon_list=pokemon_list, outcome_message=outcome_message)
 @app.route("/qbattle", methods = ["POST"])
 def qbattle():
@@ -169,19 +238,15 @@ def qbattle():
                 new_player_health = player_health - (computer_attack -0.5*player_def)
             session['player_health'] = new_player_health
             session['computer_health'] = new_computer_health
-            print(new_player_health)
-            print(session.get('player_health'))
             if new_player_health <= 0:
-                session.clear()
-                insert_battle_result(current_pokemon_data['name'],computer_data['name'], "Defeat")
+                insert_battle_result(current_pokemon_data['name'],computer_data['name'], "Defeat",get_current_id(),session.get('round_number'))
                 outcome_message = 'Defeat'
                 rec_mail = 'tefferino@gmail.com'
                 mail_message = current_pokemon_data['name'] +'\n'+ computer_data['name'] + '\n'+outcome_message
                 send_email(mail_message,rec_mail)
                 return render_template('pokemon.html', i=player_pokemon, name=name, health=health, attack=attack, defence=defence, speed=speed, special_attack=special_attack, special_attack_points=special_attack_points, player_choice=player_choice, computer_choice=computer_choice, player_attack=player_attack, computer_attack=computer_attack, player_health=new_player_health, computer_health=new_computer_health,computer_def = computer_def,outcome_message = outcome_message)
             elif new_computer_health <= 0:
-                session.clear()
-                insert_battle_result(current_pokemon_data['name'],computer_data['name'], "Win")
+                insert_battle_result(current_pokemon_data['name'],computer_data['name'], "Win",get_current_id(),session.get('round_number'))
                 outcome_message = 'Win'
                 rec_mail = 'tefferino@gmail.com'
                 mail_message = current_pokemon_data['name'] +'\n'+ computer_data['name'] + '\n'+outcome_message
@@ -221,15 +286,11 @@ def battle():
         else:
             computer_attack = session.get('computer_damage')
             new_player_health = player_health - (computer_attack -0.5*player_def)
-        print(player_health)
-        print('\n')
-        print(player_def)
-        print('\n')
         session['player_health'] = new_player_health
         session['computer_health'] = new_computer_health
         if new_player_health <= 0:
             session.clear()
-            insert_battle_result(current_pokemon_data['name'],computer_data['name'], "Defeat")
+            insert_battle_result(current_pokemon_data['name'],computer_data['name'], "Defeat",get_current_id(),session.get('round_number'))
             outcome_message = 'Defeat'
             rec_mail = 'tefferino@gmail.com'
             mail_message = current_pokemon_data['name'] +'\n'+ computer_data['name'] + '\n'+outcome_message
@@ -237,7 +298,7 @@ def battle():
             return render_template('pokemon.html', i=player_pokemon, name=name, health=health, attack=attack, defence=defence, speed=speed, special_attack=special_attack, special_attack_points=special_attack_points, player_choice=player_choice, computer_choice=computer_choice, player_attack=player_attack, computer_attack=computer_attack, player_health=new_player_health, computer_health=new_computer_health,computer_def = computer_def,outcome_message = outcome_message)
         elif new_computer_health <= 0:
             session.clear()
-            insert_battle_result(current_pokemon_data['name'],computer_data['name'], "Win")
+            insert_battle_result(current_pokemon_data['name'],computer_data['name'], "Win",get_current_id(),session.get('round_number'))
             outcome_message = 'Win'
             rec_mail = 'tefferino@gmail.com'
             mail_message = current_pokemon_data['name'] +'\n'+ computer_data['name'] + '\n'+outcome_message
@@ -248,6 +309,165 @@ def battle():
             session['round_number'] = round_number + 1
             return render_template('pokemon.html', i=player_pokemon, name=name, health=health, attack=attack, defence=defence, speed=speed, special_attack=special_attack, special_attack_points=special_attack_points, player_choice=player_choice, computer_choice=computer_choice, player_attack=player_attack, computer_attack=computer_attack, player_health=new_player_health, computer_health=new_computer_health,round_number=round_number,computer_def = computer_def)
     return "Invalid request method."
-        
+def get_current_id():
+    if session.get('user_id'):
+        return session.get('user_id')
+    else: 
+        return session.get('vk_id')
+bcrypt = Bcrypt(app) 
+@app.route('/register', methods=['POST','GET'])
+def register():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        confirm_password = request.form['confirm_password']
+        otp_enabled = request.form['enable_2fa']
+        if (password == confirm_password):  
+            password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
+            db = get_db()
+            db.execute('INSERT INTO users (email, password_hash) VALUES (?, ?)', (email, password_hash))
+            db.commit()
+            if otp_enabled:
+                otp_secret = bcrypt.generate_password_hash(pyotp.random_base32()).decode('utf-8')
+                db.execute('UPDATE users SET otp_secret = ? WHERE email = ?', (otp_secret, email))
+                db.commit()
+                msg = MIMEMultipart()
+                msg['From'] = EMAIL_ADDRESS
+                msg['To'] = email
+                msg['Subject'] = 'One time password'
+                msg.attach(MIMEText(otp_secret, 'plain'))
+                server = smtplib.SMTP_SSL(EMAIL_HOST, EMAIL_PORT)
+                time.sleep(5)
+                server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+                server.sendmail(EMAIL_ADDRESS, email, msg.as_string())
+                server.quit()    
+            return redirect(url_for('login'))
+        else: return render_template('register.html',outcome_message='Пароли не совпадают')
+    else:
+        return render_template('register.html')
+
+@app.route('/password_recovery', methods=['GET', 'POST'])
+def password_recovery():
+    db=get_db()
+    if request.method == 'POST':
+        email = request.form['email']
+        user = db.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
+
+        if user:
+            reset_token = secrets.token_urlsafe(32)
+            db.execute('UPDATE users SET reset_token = ? WHERE email = ?',
+                       (reset_token, email))
+            db.commit()
+            reset_link = f"{request.url_root}reset_password/{reset_token}"            
+            msg = MIMEMultipart()
+            msg['From'] = EMAIL_ADDRESS
+            msg['To'] = email
+            msg['Subject'] = 'recovery password link'
+            msg.attach(MIMEText(reset_link, 'plain'))
+            server = smtplib.SMTP_SSL(EMAIL_HOST, EMAIL_PORT)
+            time.sleep(5)
+            server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            server.sendmail(EMAIL_ADDRESS, email, msg.as_string())
+            server.quit()    
+            flash('Password recovery instructions sent to your email.')
+            return redirect(url_for('login'))
+        else:
+            flash('Email not found. Please check your email and try again.')
+
+    return render_template('recover_page.html')
+
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    db=get_db()
+    user = db.execute('SELECT * FROM users WHERE reset_token = ?', (token,)).fetchone()
+
+    if not user:
+        flash('Invalid reset token.')
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        password = request.form['password']
+        confirm_password = request.form['confirm_password']
+        if password == confirm_password:
+            hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+            db.execute('UPDATE users SET password_hash = ?, reset_token = NULL WHERE id = ?',
+                       (hashed_password, user['id']))
+            db.commit()
+
+            flash('Password reset successfully. You can now log in with your new password.')
+            return redirect(url_for('login'))
+        else:
+            flash('Passwords do not match. Please try again.')
+
+    return render_template('reset_password.html', token=token)
+
+@app.route('/login', methods=['POST','GET'])
+def login():
+    if request.method == 'POST':
+        db = get_db()
+        email = request.form['email']
+        password = request.form['password']
+        user = db.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
+        if user and bcrypt.check_password_hash(user['password_hash'], password):
+            session['user_id'] = user['id']
+            return redirect(url_for('choosing'))
+        else:
+            return 'Invalid email or password', 401
+    else:
+        return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('choosing'))
+
+@app.route('/oauth_callback')
+def oauth_callback():
+    db=get_db()
+    response = vk.authorized_response()
+    if response is None or response.get('access_token') is None:
+        return 'Access denied: reason={} error={}'.format(
+            request.args['error_reason'],
+            request.args['error_description']
+        )
+
+    session['vk_token'] = (response['access_token'], '')
+    user_info = vk.get('users.get', params={'fields': 'id,email'})
+
+    vk_id = user_info.data['response'][0]['id']
+    email = user_info.data['response'][0]['email']
+
+    user = db.execute('SELECT * FROM users WHERE vk_id = ?', (vk_id,)).fetchone()
+
+    if not user:
+        db.execute('INSERT INTO users (vk_id, email) VALUES (?, ?)', (vk_id, email))
+        db.commit()
+    session['user_id'] = vk_id
+
+    return redirect(url_for('choosing'))
+
+@app.route('/oauth_login')
+def oauth_login():
+    return vk.authorize(callback=url_for('oauth_callback', _external=True))
+
+@app.route('/login_2fa', methods=['POST','GET'])
+def login_2fa():
+    if request.method == 'POST':
+        db = get_db()
+        email = request.form['email']
+        otp = request.form['otp']
+        user = db.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
+        if user and bcrypt.check_password_hash(user['otp_secret'], otp):
+            session['user_id'] = user['id']
+            return redirect(url_for('choosing'))
+        else:
+            return 'Invalid email or one time password', 401
+    else:
+        return render_template('login_2fa.html')
+
+@app.route('/protected')
+@login_required
+def protected():
+    return 'This page requires login'
 if __name__ =='__main__':
     app.run(debug=True)
