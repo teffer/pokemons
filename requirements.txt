@@ -6,3 +6,4 @@ Werkzeug==2.0.2
 pyotp
 flask_bcrypt
 flask_oauthlib
+blinker==1.4

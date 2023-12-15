@@ -233,10 +233,12 @@ def qbattle():
             is_even_round = (player_choice + computer_choice) % 2 == 0
             if(is_even_round):
                 player_attack = session.get('player_damage')
-                new_computer_health = computer_health - (player_attack-0.5*computer_def)
+                computer_attack = session.get('computer_damage')
+                new_computer_health = computer_health - max(10, (player_attack-0.5*computer_def))
             else:
                 computer_attack = session.get('computer_damage')
-                new_player_health = player_health - (computer_attack -0.5*player_def)
+                player_attack = session.get('player_damage')
+                new_player_health = player_health - max(10,(computer_attack -0.5*player_def))
             session['player_health'] = new_player_health
             session['computer_health'] = new_computer_health
             if new_player_health <= 0:
@@ -283,9 +285,11 @@ def battle():
         computer_attack=0
         if(is_even_round):
             player_attack = session.get('player_damage')
+            computer_attack = session.get('computer_damage')
             new_computer_health = computer_health - (player_attack-0.5*computer_def)
         else:
             computer_attack = session.get('computer_damage')
+            player_attack = session.get('player_damage')
             new_player_health = player_health - (computer_attack -0.5*player_def)
         session['player_health'] = new_player_health
         session['computer_health'] = new_computer_health
@@ -296,19 +300,30 @@ def battle():
             rec_mail = 'tefferino@gmail.com'
             mail_message = current_pokemon_data['name'] +'\n'+ computer_data['name'] + '\n'+outcome_message
             send_email(mail_message,rec_mail)
-            return render_template('pokemon.html', i=player_pokemon, name=name, health=health, attack=attack, defence=defence, speed=speed, special_attack=special_attack, special_attack_points=special_attack_points, player_choice=player_choice, computer_choice=computer_choice, player_attack=player_attack, computer_attack=computer_attack, player_health=new_player_health, computer_health=new_computer_health,computer_def = computer_def,outcome_message = outcome_message)
+            print(player_attack)
+            return render_template('pokemon.html', i=player_pokemon, name=name, health=health, attack=attack, defence=defence, speed=speed,
+                                    special_attack=special_attack, special_attack_points=special_attack_points, player_choice=player_choice, 
+                                    computer_choice=computer_choice, player_attack=player_attack, computer_attack=computer_attack, player_health=new_player_health, 
+                                    computer_health=new_computer_health,computer_def = computer_def,outcome_message = outcome_message)
         elif new_computer_health <= 0:
             session.clear()
             insert_battle_result(current_pokemon_data['name'],computer_data['name'], "Win",get_current_id(),session.get('round_number'))
             outcome_message = 'Win'
             rec_mail = 'tefferino@gmail.com'
             mail_message = current_pokemon_data['name'] +'\n'+ computer_data['name'] + '\n'+outcome_message
-            send_email(mail_message,rec_mail)            
-            return render_template('pokemon.html', i=player_pokemon, name=name, health=health, attack=attack, defence=defence, speed=speed, special_attack=special_attack, special_attack_points=special_attack_points, player_choice=player_choice, computer_choice=computer_choice, player_attack=player_attack, computer_attack=computer_attack, player_health=new_player_health, computer_health=new_computer_health,computer_def = computer_def,outcome_message = outcome_message)
+            send_email(mail_message,rec_mail)  
+            print(player_attack)          
+            return render_template('pokemon.html', i=player_pokemon, name=name, health=health, attack=attack, defence=defence, speed=speed,
+                                    special_attack=special_attack, special_attack_points=special_attack_points, player_choice=player_choice, 
+                                    computer_choice=computer_choice, player_attack=player_attack, computer_attack=computer_attack, player_health=new_player_health, 
+                                    computer_health=new_computer_health,computer_def = computer_def,outcome_message = outcome_message)
         else:
             round_number = session.get('round_number', 1)
             session['round_number'] = round_number + 1
-            return render_template('pokemon.html', i=player_pokemon, name=name, health=health, attack=attack, defence=defence, speed=speed, special_attack=special_attack, special_attack_points=special_attack_points, player_choice=player_choice, computer_choice=computer_choice, player_attack=player_attack, computer_attack=computer_attack, player_health=new_player_health, computer_health=new_computer_health,round_number=round_number,computer_def = computer_def)
+            return render_template('pokemon.html', i=player_pokemon, name=name, health=health, attack=attack, defence=defence, speed=speed,
+                                    special_attack=special_attack, special_attack_points=special_attack_points, player_choice=player_choice,
+                                      computer_choice=computer_choice, player_attack=player_attack, computer_attack=computer_attack, player_health=new_player_health, 
+                                      computer_health=new_computer_health,round_number=round_number,computer_def = computer_def)
     return "Invalid request method."
 def get_current_id():
     if session.get('user_id'):
@@ -426,6 +441,7 @@ def logout():
 def oauth_callback():
     db=get_db()
     response = vk.authorized_response()
+    print(response)
     if response is None or response.get('access_token') is None:
         return 'Access denied: reason={} error={}'.format(
             request.args['error_reason'],
