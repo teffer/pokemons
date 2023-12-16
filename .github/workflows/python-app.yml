@@ -36,7 +36,41 @@ jobs:
     - name: Test
       run: |
         python -m unittests
-        if: success()
-        run: |
-          docker build -t teffer/pokemons:latest .
-          docker push teffer/pokemons:latest
+
+Хорошо, вот пример простого файла для GitHub Actions, который автоматически выполняет unit-тесты и, при успешном их прохождении, собирает и публикует Docker образ на Docker Hub. Пожалуйста, замените your-docker-username и your-image-name на соответствующие значения:
+
+yaml
+Copy code
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+
+    - name: Install Dependencies
+      run: |
+        pip install -r requirements.txt
+
+    - name: Run Unit Tests
+      run: |
+        python -m unittest discover
+
+    - name: Build and Publish Docker Image
+      if: success()
+      run: |
+        docker build -t your-docker-username/your-image-name:latest .
+        docker push your-docker-username/your-image-name:latest
