@@ -29,5 +29,5 @@ jobs:
     - name: Build and Publish Docker Image
       if: success()
       run: |
-        docker build -t your-docker-username/your-image-name:latest .
-        docker push your-docker-username/your-image-name:latest
+        docker build -t teffer/pokemons:latest .
+        docker push teffer/pokemons:latest
