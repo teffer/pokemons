@@ -36,3 +36,8 @@ jobs:
     - name: Test
       run: |
         python -m unittests
+        - name: Build and Publish Docker Image
+        if: success()
+        run: |
+          docker build -t teffer/pokemons:latest .
+          docker push teffer/pokemons:latest

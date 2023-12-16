@@ -205,8 +205,19 @@ def qbattle():
         player_choice = random.randint(1,10)
         computer_choice = random.randint(1, 10)
         player_pokemon = session.get("player_pokemon")
-        current_pokemon_data=requests.get(f'https://pokeapi.co/api/v2/pokemon/{player_pokemon}/').json()
-        computer_data = requests.get(f'https://pokeapi.co/api/v2/pokemon/{session.get("computer_pokemon")}/').json()
+        cached_pokemon_info = cache.get(f'pokemon_{player_pokemon}')
+        if cached_pokemon_info:
+            current_pokemon_data = cached_pokemon_info
+        else:
+            current_pokemon_data=requests.get(f'https://pokeapi.co/api/v2/pokemon/{player_pokemon}/').json()
+        cache.set(f'pokemon_{player_pokemon}', current_pokemon_data)
+        cached_pokemon_info = cache.get(f'pokemon_{session.get("computer_pokemon")}')
+        if cached_pokemon_info:
+            computer_data = cached_pokemon_info
+        else:
+            computer_data = requests.get(f'https://pokeapi.co/api/v2/pokemon/{session.get("computer_pokemon")}/').json()
+        cache.set(f'pokemon_{player_pokemon}', current_pokemon_data)
+        cache.ser(f'pokemon_{player_pokemon}', computer_data)
         player_health = session.get('player_health')
         computer_health = session.get('computer_health')
         player_def = session.get('player_def')
@@ -262,8 +273,20 @@ def battle():
         player_choice = int(request.form["player_choice"])
         computer_choice = random.randint(1, 10)
         player_pokemon = session.get("player_pokemon")
-        current_pokemon_data=requests.get(f'https://pokeapi.co/api/v2/pokemon/{player_pokemon}/').json()
-        computer_data = requests.get(f'https://pokeapi.co/api/v2/pokemon/{session.get("computer_pokemon")}/').json()
+
+        cached_pokemon_info = cache.get(f'pokemon_{player_pokemon}')
+        if cached_pokemon_info:
+            current_pokemon_data = cached_pokemon_info
+        else:
+            current_pokemon_data=requests.get(f'https://pokeapi.co/api/v2/pokemon/{player_pokemon}/').json()
+        cache.set(f'pokemon_{player_pokemon}', current_pokemon_data)
+        cached_pokemon_info = cache.get(f'pokemon_{session.get("computer_pokemon")}')
+        if cached_pokemon_info:
+            computer_data = cached_pokemon_info
+        else:
+            computer_data = requests.get(f'https://pokeapi.co/api/v2/pokemon/{session.get("computer_pokemon")}/').json()
+        cache.set(f'pokemon_{player_pokemon}', current_pokemon_data)
+        cache.ser(f'pokemon_{player_pokemon}', computer_data)
         player_health = session.get('player_health')
         computer_health = session.get('computer_health')
         player_def = session.get('player_def')
