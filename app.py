@@ -483,6 +483,8 @@ def authorized():
     session['vk_token'] = (response['access_token'], '')
     user_info = vk.get('users.get', data={'fields': 'id,email'})
     user_info_data_str = user_info.data.decode('utf-8')
+    if not user_info_data_str:
+        return 'Error: Empty response from VK API'
     user_info_json = json.loads(user_info_data_str)
     vk_id = user_info_json.data['response'][0]['id']
     email = user_info_json.data['response'][0]['email']
