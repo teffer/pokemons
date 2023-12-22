@@ -138,10 +138,6 @@ def main(page):
     else:
         print(f"{response.status_code}")
 
-@app.route('/login_yandex')
-def login_yandex():
-    return yandex.authorize(callback=url_for('authorized', _external=True))
-
 @app.route("/", methods=["GET", "POST"])
 @login_required
 def choosing():
@@ -466,7 +462,11 @@ def logout():
     session.clear()
     return redirect(url_for('choosing'))
 
-@app.route('/login_yandex/authorized')
+@app.route('/login_yandex')
+def login_yandex():
+    return yandex.authorize(callback=url_for('authorized', _external=True))
+
+@app.route('/authorized')
 def authorized():
     if request.method == 'GET':
         print('this is garbage')
