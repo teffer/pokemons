@@ -36,7 +36,7 @@ yandex = oauth.remote_app(
     'yandex',
     consumer_key='b2bd35b660d441398a93e572c15b9625',
     consumer_secret='ac8c07603b47428e8cb550b8c7675b25',
-    request_token_params={'scope': 'email',},
+    request_token_params={'scope': 'email login name surname gender'},
     base_url='https://login.yandex.ru/',
     authorize_url='https://oauth.yandex.ru/authorize',
     request_token_url=None,
