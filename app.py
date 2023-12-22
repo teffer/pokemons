@@ -461,6 +461,10 @@ def logout():
     session.clear()
     return redirect(url_for('choosing'))
 
+@vk.tokengetter
+def get_vk_oauth_token():
+    return session.get('vk_token')
+
 @app.route('/login_vk')
 def login_vk():
     return vk.authorize(callback=url_for('authorized', _external=True))
@@ -479,7 +483,7 @@ def authorized():
 
     vk_id = user_info.data['response'][0]['id']
     email = user_info.data['response'][0]['email']
-
+    session['vk_token'] = (response['access_token'], '')
     user = db.execute('SELECT * FROM users WHERE vk_id = ?', (vk_id,)).fetchone()
 
     if not user:
