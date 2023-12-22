@@ -145,6 +145,7 @@ def choosing():
     if request.method == "POST":
         choice = request.form["choice"]
         print(choice)
+        outcome_message = ""
         try:
             player_pokemon = int(choice)
             if 0 < player_pokemon < 20:
@@ -495,7 +496,7 @@ def authorized():
     #     db.execute('INSERT INTO users (id, email) VALUES (?, ?)', (vk_id, email))
     #     db.commit()
     session['user_id'] = vk_id
-    return redirect(url_for('choosing'))
+    return redirect(url_for('pokemon_list_show'))
 
 
 @app.route('/login_2fa', methods=['POST','GET'])
