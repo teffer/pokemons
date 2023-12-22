@@ -468,29 +468,26 @@ def login_yandex():
 
 @app.route('/authorized')
 def authorized():
-    if request.method == 'GET':
-        print('this is garbage')
-    else:
-        db=get_db()
-        response = yandex.authorized_response()
-        print(response)
-        if response is None or response.get('access_token') is None:
-            return 'Access denied: reason={} error={}'.format(
-                request.args['error_reason'],
-                request.args['error_description']
-            )
-        user_info = yandex.get('users.get', params={'fields': 'id,email'})
+    db=get_db()
+    response = yandex.authorized_response()
+    print(response)
+    if response is None or response.get('access_token') is None:
+        return 'Access denied: reason={} error={}'.format(
+            request.args['error_reason'],
+            request.args['error_description']
+        )
+    user_info = yandex.get('users.get', params={'fields': 'id,email'})
 
-        yandex_id = user_info.data['response'][0]['id']
-        email = user_info.data['response'][0]['email']
+    yandex_id = user_info.data['response'][0]['id']
+    email = user_info.data['response'][0]['email']
 
-        user = db.execute('SELECT * FROM users WHERE vk_id = ?', (yandex_id,)).fetchone()
+    user = db.execute('SELECT * FROM users WHERE vk_id = ?', (yandex_id,)).fetchone()
 
-        if not user:
-            db.execute('INSERT INTO users (id, email) VALUES (?, ?)', (yandex_id, email))
-            db.commit()
-        session['user_id'] = yandex_id
-        return redirect(url_for('choosing'))
+    if not user:
+        db.execute('INSERT INTO users (id, email) VALUES (?, ?)', (yandex_id, email))
+        db.commit()
+    session['user_id'] = yandex_id
+    return redirect(url_for('choosing'))
 
 
 @app.route('/login_2fa', methods=['POST','GET'])
