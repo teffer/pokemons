@@ -481,11 +481,11 @@ def authorized():
             request.args['error_description']
         )
     session['vk_token'] = (response['access_token'], '')
-    user_info = vk.get('users.get', data={'fields': 'id,email'})
+    user_info = vk.get('users.get', params={'fields': 'id,email'})
     if not user_info:
         return 'Error: Empty response from VK API'
-    vk_id = user_info.data['response'][0]['id']
-    email = user_info.data['response'][0]['email']
+    vk_id = user_info.data[0]['id']
+    email = user_info.data[0].get('email', '')
     user = db.execute('SELECT * FROM users WHERE vk_id = ?', (vk_id,)).fetchone()
 
     if not user:
