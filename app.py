@@ -488,9 +488,9 @@ def authorized():
     email = user_info.data.get('email', '')
     user = db.execute('SELECT * FROM users WHERE vk_id = ?', (vk_id,)).fetchone()
 
-    if not user:
-        db.execute('INSERT INTO users (id, email) VALUES (?, ?)', (vk_id, email))
-        db.commit()
+    # if not user:
+    #     db.execute('INSERT INTO users (id, email) VALUES (?, ?)', (vk_id, email))
+    #     db.commit()
     session['user_id'] = vk_id
     return redirect(url_for('choosing'))
 
