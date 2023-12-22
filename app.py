@@ -25,13 +25,13 @@ EMAIL_HOST = 'smtp.mail.ru'
 EMAIL_PORT = 465
 EMAIL_ADDRESS = 'zhenya.lember@mail.ru'
 EMAIL_PASSWORD = 'STFdVAVjVKmjexRN4gsA'
-app.config['CACHE_TYPE'] = 'redis'
-app.config['CACHE_KEY_PREFIX'] = 'pokemon_cache'
-app.config['CACHE_REDIS_HOST'] = 'localhost'
-app.config['CACHE_REDIS_PORT'] = 6379
-app.config['CACHE_REDIS_DB'] = 0
-# metrics = PrometheusMetrics(app)
-cache = Cache(app)
+# app.config['CACHE_TYPE'] = 'redis'
+# app.config['CACHE_KEY_PREFIX'] = 'pokemon_cache'
+# app.config['CACHE_REDIS_HOST'] = 'localhost'
+# app.config['CACHE_REDIS_PORT'] = 6379
+# app.config['CACHE_REDIS_DB'] = 0
+# # metrics = PrometheusMetrics(app)
+# cache = Cache(app)
 oauth = OAuth(app)
 vk = oauth.remote_app(
     'vk',
@@ -84,23 +84,23 @@ def insert_battle_result(player_name,computer_name,outcome,user_id,rounds):
                [player_name,computer_name,outcome,user_id,rounds])
     db.commit()
 
-@app.route('/cache-info', methods=['GET'])
-@login_required
-def cache_info():
-    cache_data = {}
+# @app.route('/cache-info', methods=['GET'])
+# @login_required
+# def cache_info():
+#     cache_data = {}
 
-    # Connect to the Redis server
-    redis_conn = redis.StrictRedis(host='localhost', port=6379, db=0)
+#     # Connect to the Redis server
+#     redis_conn = redis.StrictRedis(host='localhost', port=6379, db=0)
 
-    # Fetch all keys using the KEYS command (Note: KEYS can be resource-intensive)
-    all_keys = redis_conn.keys('*')
+#     # Fetch all keys using the KEYS command (Note: KEYS can be resource-intensive)
+#     all_keys = redis_conn.keys('*')
 
-    # Fetch values for each key
-    for key in all_keys:
-        value = redis_conn.get(key)
-        cache_data[key.decode('utf-8', errors='replace')] = value.decode('utf-8', errors='replace') if value else None
+#     # Fetch values for each key
+#     for key in all_keys:
+#         value = redis_conn.get(key)
+#         cache_data[key.decode('utf-8', errors='replace')] = value.decode('utf-8', errors='replace') if value else None
 
-    return jsonify(cache_data)
+#     return jsonify(cache_data)
 
 def main(page):
     offset = (page - 1) * 20
