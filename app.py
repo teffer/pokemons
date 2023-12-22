@@ -104,7 +104,7 @@ def cache_info():
 
 def main(page):
     offset = (page - 1) * 20
-    @cache.memoize(timeout=300) 
+    #@cache.memoize(timeout=300) 
     def fetch_pokemon_data(url,**params):
         response = requests.get(url)
         if response.status_code == 200:
@@ -139,10 +139,9 @@ def main(page):
     else:
         print(f"{response.status_code}")
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/choosing", methods=["POST"])
+@login_required
 def choosing():
-    outcome_message = ""
-    page = request.args.get('page', 1, type=int)
     if request.method == "POST":
         choice = request.form["choice"]
         print(choice)
@@ -189,15 +188,19 @@ def choosing():
                 return "Invalid choice"
         except ValueError:
             pass
-    else:
-        cached_pokemon_list = cache.get(f'pokemon_list_{page}')
-        if cached_pokemon_list:
-            pokemon_list = cached_pokemon_list
-        else:
-            pokemon_list = main(page)
-        cache.set(f'pokemon_list_{page}', pokemon_list)
-        print('something')
-        return render_template('index.html', pokemon_list=pokemon_list, outcome_message=outcome_message,page=page)
+
+@app.route("/", methods=["GET"])
+def pokemon_list_show():
+    outcome_message = ""
+    page = request.args.get('page', 1, type=int)
+        # cached_pokemon_list = cache.get(f'pokemon_list_{page}')
+        # if cached_pokemon_list:
+        #     pokemon_list = cached_pokemon_list
+        # else:
+    pokemon_list = main(page)
+        # cache.set(f'pokemon_list_{page}', pokemon_list)
+    print('something')
+    return render_template('index.html', pokemon_list=pokemon_list, outcome_message=outcome_message,page=page)
 
 @app.route("/qbattle", methods = ["POST"])
 @login_required
@@ -206,19 +209,19 @@ def qbattle():
         player_choice = random.randint(1,10)
         computer_choice = random.randint(1, 10)
         player_pokemon = session.get("player_pokemon")
-        cached_pokemon_info = cache.get(f'pokemon_{player_pokemon}')
-        if cached_pokemon_info:
-            current_pokemon_data = cached_pokemon_info
-        else:
-            current_pokemon_data=requests.get(f'https://pokeapi.co/api/v2/pokemon/{player_pokemon}/').json()
-        cache.set(f'pokemon_{player_pokemon}', current_pokemon_data)
-        cached_pokemon_info = cache.get(f'pokemon_{session.get("computer_pokemon")}')
-        if cached_pokemon_info:
-            computer_data = cached_pokemon_info
-        else:
-            computer_data = requests.get(f'https://pokeapi.co/api/v2/pokemon/{session.get("computer_pokemon")}/').json()
-        cache.set(f'pokemon_{player_pokemon}', current_pokemon_data)
-        cache.set(f'pokemon_{player_pokemon}', computer_data)
+        # cached_pokemon_info = cache.get(f'pokemon_{player_pokemon}')
+        # if cached_pokemon_info:
+        #     current_pokemon_data = cached_pokemon_info
+        # else:
+        current_pokemon_data=requests.get(f'https://pokeapi.co/api/v2/pokemon/{player_pokemon}/').json()
+        # cache.set(f'pokemon_{player_pokemon}', current_pokemon_data)
+        # cached_pokemon_info = cache.get(f'pokemon_{session.get("computer_pokemon")}')
+        # if cached_pokemon_info:
+        #     computer_data = cached_pokemon_info
+        # else:
+        computer_data = requests.get(f'https://pokeapi.co/api/v2/pokemon/{session.get("computer_pokemon")}/').json()
+        # cache.set(f'pokemon_{player_pokemon}', current_pokemon_data)
+        # cache.set(f'pokemon_{player_pokemon}', computer_data)
         player_health = session.get('player_health')
         computer_health = session.get('computer_health')
         player_def = session.get('player_def')
@@ -276,19 +279,19 @@ def battle():
         computer_choice = random.randint(1, 10)
         player_pokemon = session.get("player_pokemon")
 
-        cached_pokemon_info = cache.get(f'pokemon_{player_pokemon}')
-        if cached_pokemon_info:
-            current_pokemon_data = cached_pokemon_info
-        else:
-            current_pokemon_data=requests.get(f'https://pokeapi.co/api/v2/pokemon/{player_pokemon}/').json()
-        cache.set(f'pokemon_{player_pokemon}', current_pokemon_data)
-        cached_pokemon_info = cache.get(f'pokemon_{session.get("computer_pokemon")}')
-        if cached_pokemon_info:
-            computer_data = cached_pokemon_info
-        else:
-            computer_data = requests.get(f'https://pokeapi.co/api/v2/pokemon/{session.get("computer_pokemon")}/').json()
-        cache.set(f'pokemon_{player_pokemon}', current_pokemon_data)
-        cache.set(f'pokemon_{player_pokemon}', computer_data)
+        # cached_pokemon_info = cache.get(f'pokemon_{player_pokemon}')
+        # if cached_pokemon_info:
+        #     current_pokemon_data = cached_pokemon_info
+        # else:
+        current_pokemon_data=requests.get(f'https://pokeapi.co/api/v2/pokemon/{player_pokemon}/').json()
+        # cache.set(f'pokemon_{player_pokemon}', current_pokemon_data)
+        # cached_pokemon_info = cache.get(f'pokemon_{session.get("computer_pokemon")}')
+        # if cached_pokemon_info:
+        #     computer_data = cached_pokemon_info
+        # else:
+        computer_data = requests.get(f'https://pokeapi.co/api/v2/pokemon/{session.get("computer_pokemon")}/').json()
+        # cache.set(f'pokemon_{player_pokemon}', current_pokemon_data)
+        # cache.set(f'pokemon_{player_pokemon}', computer_data)
         player_health = session.get('player_health')
         computer_health = session.get('computer_health')
         player_def = session.get('player_def')
