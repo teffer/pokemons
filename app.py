@@ -32,16 +32,16 @@ app.config['CACHE_REDIS_DB'] = 0
 # metrics = PrometheusMetrics(app)
 cache = Cache(app)
 oauth = OAuth(app)
-vk = oauth.remote_app(
-    'vk',
-    consumer_key='51805289',
-    consumer_secret='ym2I5aN7qLmJsApFScl3',
-    request_token_params={'scope': 'email'},
-    base_url='https://api.vk.com/method/',
+yandex = oauth.remote_app(
+    'yandex',
+    consumer_key='b2bd35b660d441398a93e572c15b9625',
+    consumer_secret='ac8c07603b47428e8cb550b8c7675b25',
+    request_token_params={'scope': 'email',},
+    base_url='https://login.yandex.ru/',
+    authorize_url='https://oauth.yandex.ru/authorize',
     request_token_url=None,
     access_token_method='POST',
-    access_token_url='https://oauth.vk.com/access_token',
-    authorize_url='https://oauth.vk.com/authorize',
+    access_token_url='https://oauth.yandex.ru/token',
 )
 def login_required(view):
     @wraps(view)
@@ -138,7 +138,12 @@ def main(page):
     else:
         print(f"{response.status_code}")
 
+@app.route('/login_yandex')
+def login_yandex():
+    return yandex.authorize(callback=url_for('authorized', _external=True))
+
 @app.route("/", methods=["GET", "POST"])
+@login_required
 def choosing():
     outcome_message = ""
     page = request.args.get('page', 1, type=int)
@@ -189,7 +194,6 @@ def choosing():
         except ValueError:
             pass
     else:
-        print('something 1')
         cached_pokemon_list = cache.get(f'pokemon_list_{page}')
         if cached_pokemon_list:
             pokemon_list = cached_pokemon_list
@@ -200,6 +204,7 @@ def choosing():
         return render_template('index.html', pokemon_list=pokemon_list, outcome_message=outcome_message,page=page)
 
 @app.route("/qbattle", methods = ["POST"])
+@login_required
 def qbattle():
     if request.method == "POST":
         player_choice = random.randint(1,10)
@@ -268,6 +273,7 @@ def qbattle():
                 return render_template('pokemon.html', i=player_pokemon, name=name, health=health, attack=attack, defence=defence, speed=speed, special_attack=special_attack, special_attack_points=special_attack_points, player_choice=player_choice, computer_choice=computer_choice, player_attack=player_attack, computer_attack=computer_attack, player_health=new_player_health, computer_health=new_computer_health,computer_def = computer_def,outcome_message = outcome_message)
     return "Invalid request method."
 @app.route("/battle", methods=["POST"])
+@login_required
 def battle():
     if request.method == "POST":
         player_choice = int(request.form["player_choice"])
@@ -360,7 +366,7 @@ def register():
         email = request.form['email']
         password = request.form['password']
         confirm_password = request.form['confirm_password']
-        otp_enabled = request.form['enable_2fa']
+        otp_enabled = True
         if (password == confirm_password):  
             password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
             db = get_db()
@@ -460,35 +466,32 @@ def logout():
     session.clear()
     return redirect(url_for('choosing'))
 
-@app.route('/oauth_callback')
-def oauth_callback():
-    db=get_db()
-    response = vk.authorized_response()
-    print(response)
-    if response is None or response.get('access_token') is None:
-        return 'Access denied: reason={} error={}'.format(
-            request.args['error_reason'],
-            request.args['error_description']
-        )
+@app.route('/login_yandex/authorized')
+def authorized():
+    if request.method == 'GET':
+        print('this is garbage')
+    else:
+        db=get_db()
+        response = yandex.authorized_response()
+        print(response)
+        if response is None or response.get('access_token') is None:
+            return 'Access denied: reason={} error={}'.format(
+                request.args['error_reason'],
+                request.args['error_description']
+            )
+        user_info = yandex.get('users.get', params={'fields': 'id,email'})
 
-    session['vk_token'] = (response['access_token'], '')
-    user_info = vk.get('users.get', params={'fields': 'id,email'})
+        yandex_id = user_info.data['response'][0]['id']
+        email = user_info.data['response'][0]['email']
 
-    vk_id = user_info.data['response'][0]['id']
-    email = user_info.data['response'][0]['email']
+        user = db.execute('SELECT * FROM users WHERE vk_id = ?', (yandex_id,)).fetchone()
 
-    user = db.execute('SELECT * FROM users WHERE vk_id = ?', (vk_id,)).fetchone()
+        if not user:
+            db.execute('INSERT INTO users (id, email) VALUES (?, ?)', (yandex_id, email))
+            db.commit()
+        session['user_id'] = yandex_id
+        return redirect(url_for('choosing'))
 
-    if not user:
-        db.execute('INSERT INTO users (vk_id, email) VALUES (?, ?)', (vk_id, email))
-        db.commit()
-    session['user_id'] = vk_id
-
-    return redirect(url_for('choosing'))
-
-@app.route('/oauth_login')
-def oauth_login():
-    return vk.authorize(callback=url_for('oauth_callback', _external=True))
 
 @app.route('/login_2fa', methods=['POST','GET'])
 def login_2fa():
