@@ -480,7 +480,9 @@ def authorized():
             request.args['error_description']
         )
     user_info = vk.get('users.get', data={'fields': 'id,email'})
-
+    if 'error' in user_info.data:
+        error_message = user_info.data['error']['error_msg']
+        return f'Error fetching user info: {error_message}'
     vk_id = user_info.data['response'][0]['id']
     email = user_info.data['response'][0]['email']
     session['vk_token'] = (response['access_token'], '')
