@@ -26,6 +26,7 @@ class AppTestCase(unittest.TestCase):
     def test_battle_route(self):
         with self.app as client:
             with client.session_transaction() as session:
+                session['user_id'] = 1
                 session['round_number'] = 1
                 session['player_pokemon'] = 1
                 session['computer_pokemon'] = 5
@@ -54,6 +55,7 @@ class AppTestCase(unittest.TestCase):
     def test_qbattle_route(self):
         with self.app as client:
             with client.session_transaction() as session:
+                session['user_id'] = 1
                 session['round_number'] = 1
                 session['player_pokemon'] = 1
                 session['computer_pokemon'] = 2
