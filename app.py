@@ -32,16 +32,16 @@ app.config['CACHE_REDIS_DB'] = 0
 # metrics = PrometheusMetrics(app)
 cache = Cache(app)
 oauth = OAuth(app)
-yandex = oauth.remote_app(
-    'yandex',
-    consumer_key='b2bd35b660d441398a93e572c15b9625',
-    consumer_secret='ac8c07603b47428e8cb550b8c7675b25',
-    request_token_params={'scope': 'client_id'},
-    base_url='https://login.yandex.ru/',
-    authorize_url='https://oauth.yandex.ru/authorize',
+vk = oauth.remote_app(
+    'vk',
+    consumer_key='51805289',
+    consumer_secret='ym2I5aN7qLmJsApFScl3',
+    request_token_params={'scope': 'email'},
+    base_url='https://login.vk.ru/',
+    authorize_url='https://oauth.vk.ru/authorize',
     request_token_url=None,
     access_token_method='POST',
-    access_token_url='https://oauth.yandex.ru/token',
+    access_token_url='https://oauth.vk.ru/token',
 )
 def login_required(view):
     @wraps(view)
@@ -462,31 +462,31 @@ def logout():
     session.clear()
     return redirect(url_for('choosing'))
 
-@app.route('/login_yandex')
-def login_yandex():
-    return yandex.authorize(callback=url_for('authorized', _external=True))
+@app.route('/login_vk')
+def login_vk():
+    return vk.authorize(callback=url_for('authorized', _external=True))
 
 @app.route('/authorized')
 def authorized():
     db=get_db()
-    response = yandex.authorized_response()
+    response = vk.authorized_response()
     print(response)
     if response is None or response.get('access_token') is None:
         return 'Access denied: reason={} error={}'.format(
             request.args['error_reason'],
             request.args['error_description']
         )
-    user_info = yandex.get('users.get', params={'fields': 'code,email'})
+    user_info = vk.get('users.get', params={'fields': 'code,email'})
 
-    yandex_id = user_info.data['response'][0]['id']
+    vk_id = user_info.data['response'][0]['id']
     email = user_info.data['response'][0]['email']
 
-    user = db.execute('SELECT * FROM users WHERE vk_id = ?', (yandex_id,)).fetchone()
+    user = db.execute('SELECT * FROM users WHERE vk_id = ?', (vk_id,)).fetchone()
 
     if not user:
-        db.execute('INSERT INTO users (id, email) VALUES (?, ?)', (yandex_id, email))
+        db.execute('INSERT INTO users (id, email) VALUES (?, ?)', (vk_id, email))
         db.commit()
-    session['user_id'] = yandex_id
+    session['user_id'] = vk_id
     return redirect(url_for('choosing'))
 
 
