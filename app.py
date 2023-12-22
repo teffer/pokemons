@@ -139,7 +139,6 @@ def main(page):
         print(f"{response.status_code}")
 
 @app.route("/", methods=["GET", "POST"])
-@login_required
 def choosing():
     outcome_message = ""
     page = request.args.get('page', 1, type=int)
@@ -200,7 +199,7 @@ def choosing():
         return render_template('index.html', pokemon_list=pokemon_list, outcome_message=outcome_message,page=page)
 
 @app.route("/qbattle", methods = ["POST"])
-#@login_required
+@login_required
 def qbattle():
     if request.method == "POST":
         player_choice = random.randint(1,10)
@@ -269,7 +268,7 @@ def qbattle():
                 return render_template('pokemon.html', i=player_pokemon, name=name, health=health, attack=attack, defence=defence, speed=speed, special_attack=special_attack, special_attack_points=special_attack_points, player_choice=player_choice, computer_choice=computer_choice, player_attack=player_attack, computer_attack=computer_attack, player_health=new_player_health, computer_health=new_computer_health,computer_def = computer_def,outcome_message = outcome_message)
     return "Invalid request method."
 @app.route("/battle", methods=["POST"])
-#@login_required
+@login_required
 def battle():
     if request.method == "POST":
         player_choice = int(request.form["player_choice"])
