@@ -475,7 +475,7 @@ def authorized():
             request.args['error_reason'],
             request.args['error_description']
         )
-    user_info = vk.get('users.get', params={'fields': 'id,email'})
+    user_info = vk.get('users.get', data={'fields': 'id,email'})
 
     vk_id = user_info.data['response'][0]['id']
     email = user_info.data['response'][0]['email']
