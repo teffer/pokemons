@@ -190,7 +190,7 @@ def choosing():
         except ValueError:
             pass
 
-@app.route("/", methods=["GET","POST"])
+@app.route("/", methods=["GET"])
 def pokemon_list_show():
     outcome_message = ""
     page = request.args.get('page', 1, type=int)
