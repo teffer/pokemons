@@ -455,7 +455,7 @@ def login():
         user = db.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
         if user and bcrypt.check_password_hash(user['password_hash'], password):
             session['user_id'] = user['id']
-            return redirect(url_for('choosing'))
+            return redirect(url_for('pokemon_list_show'))
         else:
             return 'Invalid email or password', 401
     else:
@@ -464,7 +464,7 @@ def login():
 @app.route('/logout')
 def logout():
     session.clear()
-    return redirect(url_for('choosing'))
+    return redirect(url_for('pokemon_list_show'))
 
 @vk.tokengetter
 def get_vk_oauth_token():
