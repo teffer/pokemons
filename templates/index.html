@@ -40,7 +40,7 @@
                 </td>
         {% endfor %}
     </table>
-   <form method = "POST",action='/choosing'>
+   <form method = "POST" action='/choosing'>
         <select name = "choice" required>
             <option value="" disabled selected> Выбери своего покемона!</option>
             {% for pokemon in pokemon_list %}
