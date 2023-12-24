@@ -19,7 +19,7 @@ import secrets
 # from prometheus_flask_exporter import PrometheusMetrics
 
 app = Flask(__name__)
-app.secret_key = 'tef'
+app.secret_key = 'teff'
 app.config['DATABASE'] = 'pokemon.db'
 EMAIL_HOST = 'smtp.mail.ru'
 EMAIL_PORT = 465
