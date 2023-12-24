@@ -44,7 +44,7 @@
         <select name = "choice" required>
             <option value="" disabled selected> Выбери своего покемона!</option>
             {% for pokemon in pokemon_list %}
-                <option value="{{loop.index}}">{{pokemon['name']}}</option>
+                <option value="{{loop.index + (page -1) *20}}">{{pokemon['name']}}</option>
             {% endfor %}
         </select>
         <button type="submit">
